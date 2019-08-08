@@ -13,7 +13,7 @@ $(document).ready(function() {
 				
 				socket = new WebSocket(host);
 				var in_string;
-				message('<p class="event">Socket Status: '+socket.readyState);
+				//message('<p class="event">Socket Status: '+socket.readyState);
 				
 				socket.onopen = function(){
 					message('<p class="event">Socket Status: '+socket.readyState+' (open)');	
