@@ -41,7 +41,7 @@ int websocket_generate_key(char *f)
 
 int websocket_mask_data (char *f, char *out_buf, int count)
 {
-    int  mask_index=0,i;
+    int  mask_index = 0, i;
     char mask_keys[4];
 
     mask_keys[0] = f[2];
