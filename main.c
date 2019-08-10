@@ -363,7 +363,7 @@ thr_startfunc_t serve_pipe(void *data)
             }
             if (1) {
                 if (sock_count > 0) {
-                    if (sock_buf[0] & 0x8 && sock_count > 1 && websocket_state == 2) {
+                    if (sock_buf[0] & 0x08 && sock_count > 1 && websocket_state == 2) {
                         fprintf(stderr,"server(%d) close frame from client\n", port);
                         break;
                     }
@@ -391,7 +391,7 @@ thr_startfunc_t serve_pipe(void *data)
             memset((void *)sock_buf, 0, sizeof(sock_buf) );
         }
         /* unlock our mutex */
-        thr_mutex_unlock(pipe->mutex);		
+        thr_mutex_unlock(pipe->mutex);
     }
     fprintf(stderr, "server(%d) exiting\n", port);
     fprintf(stderr, "server(%d) releasing serial port\n", port);
