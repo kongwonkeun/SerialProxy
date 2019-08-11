@@ -241,7 +241,6 @@ thr_startfunc_t serve_pipe(void *data)
             FD_ZERO(&rfds);
             FD_ZERO(&wfds);
             FD_SET(sock_fd, &rfds);
-            // only ask for write notification if we have something to write
             if (sio_count > 0) FD_SET(sock_fd, &wfds);
             // wait for read/write events
             res = select(fd_max + 1, &rfds, &wfds, NULL, ptv);
@@ -249,10 +248,10 @@ thr_startfunc_t serve_pipe(void *data)
                 perror2("server(%d) select()", port);
                 break;
             }
-            if (1) {
+            //if (1) { // send raw data before websocket_state == 2
+            if (websocket_state == 2) {
                 // only read input if buffer is empty
                 if (sio_count == 0) {
-
                     //---- kong ----
                     sio_count = sio_read(&pipe->sio, sio_buf, sizeof(sio_buf));
                     if (sio_count < 0) {
@@ -260,7 +259,6 @@ thr_startfunc_t serve_pipe(void *data)
                         break;
                     }
                     //----
-
                 }
             }
             if (websocket_state == 1) {
@@ -273,7 +271,6 @@ thr_startfunc_t serve_pipe(void *data)
                 if (sio_count > 0) {
                     if (websocket_state == 2) {
                         // websocket handshake done, send data packet to socket with needed extra bytes
-
                         //---- kong ----
                         memset(out_buf, 0, sizeof(out_buf));
                         memcpy(out_buf + 2, sio_buf, sio_count);
@@ -285,7 +282,6 @@ thr_startfunc_t serve_pipe(void *data)
                         }
                         sio_count -= res - 2;
                         //----
-
                     }
                     else if (http_state == 2) {
                         // http connection ready and headers sent, wait for end of line and send HTTP response to client
@@ -318,7 +314,7 @@ thr_startfunc_t serve_pipe(void *data)
                     if (sock_count <= 0) {
                         if (sock_count == 0) {
                             fprintf(stderr, "server(%d) EOF from sock\n", port);
-                            break;
+                            //break;
                         }
                         else
                             break;
@@ -388,21 +384,19 @@ thr_startfunc_t serve_pipe(void *data)
                         // we can ignore this part with HTTP
                         http_state = 2;
                     }
-
                     //---- kong ----
-                    //if ((res = sio_write(&pipe->sio, sock_buf, sock_count)) < 0) {
-                    //    perror2("server(%d) write(sio)", port);
-                    //    break;
-                    //}
-                    //sock_count -= res;
-                    sock_count = 0;
+                    if ((res = sio_write(&pipe->sio, sock_buf, sock_count)) < 0) {
+                        perror2("server(%d) write(sio)", port);
+                        break;
+                    }
+                    sock_count -= res;
                     //----
                 }
             }
             memset((void *)sock_buf, 0, sizeof(sock_buf) );
         }
         /* unlock our mutex */
-        thr_mutex_unlock(pipe->mutex);		
+        thr_mutex_unlock(pipe->mutex);
     }
     fprintf(stderr, "server(%d) exiting\n", port);
     fprintf(stderr, "server(%d) releasing serial port\n", port);
