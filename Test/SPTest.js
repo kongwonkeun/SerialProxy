@@ -1,6 +1,7 @@
 //
 var logger;
-var host = "ws://localhost:5331/write_anything_here.php";
+//var host = "ws://localhost:5331/write_anything_here.php";
+var host = "ws://localhost:5331/echo";
 var socket;
 var buffer = 0;
 var count = 0;
@@ -16,6 +17,7 @@ $(document).ready(function()
 
             socket.onopen = function() {
                 log('socket open = ' + socket.readyState);
+                socket.send("hello server");
             }
 
             socket.onmessage = function(event) {
@@ -29,6 +31,11 @@ $(document).ready(function()
                 log('socket close = ' + socket.readyState);
                 socket.close();
             }
+
+            socket.onerror = function() {
+                log('socket error = ' + socket.readyState);
+            }
+            
         } catch(e) {
             log('error = ' + e);
         }
