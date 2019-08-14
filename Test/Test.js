@@ -54,14 +54,11 @@ $(document).ready(function()
 
     function log(msg) { logger.innerHTML += msg + "<br/>"; }
 
-    $('#disconnect').click(function() { log("proxy disconnecting ..."); socket.close(); });	
-    $('#connect').click(function() { log("proxy connecting ..."); connect(); });
-    $('#text').keypress(function(event) { if (event.keyCode == '13') send(); });	
-    $('#send').click(function() { send(); });
+    $('#datalog').click(function() { connect(); });
 });
 
 $(window).load(function()
 {
-    $('#connect').click();
+    $('#datalog').click();
 });
 //

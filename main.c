@@ -198,7 +198,7 @@ thr_startfunc_t serve_pipe(void *data)
     int  http_state = 0; // keeps track of http state
     fd_set rfds, wfds;
     pipe_s *pipe = (pipe_s *)data;
-    struct timeval tv = { 0, 20000 }; // { sec, microsec }
+    struct timeval tv = { 0, 10000 }; //---- kong ---- { sec, microsec }
     struct timeval *ptv = &tv;
     DWORD msecs = 0, timeout = pipe->timeout * 1000;
     HANDLE sio_fd;
@@ -250,8 +250,7 @@ thr_startfunc_t serve_pipe(void *data)
                 perror2("server(%d) select()", port);
                 break;
             }
-            //if (1) { // send raw data before websocket_state == 2
-            if (websocket_state == 2) {
+            if (1) {
                 // only read input if buffer is empty
                 if (sio_count == 0) {
                     //---- kong ----
@@ -260,6 +259,9 @@ thr_startfunc_t serve_pipe(void *data)
                         perror2("server(%d) read(sio) count %d", port, sio_count);
                         break;
                     }
+                    if (sio_count > 125) {
+                        sio_count = 125; // work aroung for high-speed serial data
+                    }
                     //----
                 }
             }
@@ -267,9 +269,6 @@ thr_startfunc_t serve_pipe(void *data)
                 // we have header from client, send our key and headers to client.
                 sio_count = websocket_generate_headers(sio_buf);
                 websocket_state = 2;
-                //---- kong ----
-                FD_SET(sock_fd, &wfds);
-                //----
             }
             // write to socket possible?
             if (FD_ISSET(sock_fd, &wfds)) {
@@ -317,12 +316,9 @@ thr_startfunc_t serve_pipe(void *data)
                 if (sock_count == 0) {
                     sock_count = tcp_read(&pipe->sock, sock_buf, sizeof(sock_buf));
                     if (sock_count <= 0) {
-                        if (sock_count == 0) {
-                            fprintf(stderr, "server(%d) EOF from sock\n", port);
-                            //break;
-                        }
-                        else
-                            break;
+                        //---- kong ----
+                        fprintf(stderr, "server(%d) sock = %d\n", port, sock_count);
+                        //----
                     }
                     if (websocket_state == 0) {
                         websocket_generate_key(sock_buf);
@@ -333,14 +329,14 @@ thr_startfunc_t serve_pipe(void *data)
                         websocket_state = 1;
                     }
                     else if (http_state == 0) {
-                        http_generate_headers( out_buf, 200, "OK", -1 ); 
+                        http_generate_headers(out_buf, 200, "OK", -1); 
                         if ((res = tcp_write(&pipe->sock, out_buf, strlen(out_buf))) < 0) {
                             perror2("server(%d) header write(sock)", port);
                             break;
                         }
                         // handle request parameters
                         memset(misc_buf, 0, sizeof(misc_buf));
-                        res = http_handle_get( sock_buf, misc_buf );
+                        res = http_handle_get(sock_buf, misc_buf);
                         if (res == 0) { // favicon request or similar, we ignore that
                             fprintf(stderr, "server(%d) ignoring get %s\n", port, misc_buf);
                             memset(sock_buf, 0, sizeof(sock_buf));
@@ -349,7 +345,7 @@ thr_startfunc_t serve_pipe(void *data)
                             break;
                         }
                         else {
-                            fprintf(stderr, "server(%d) get %s\n", port, misc_buf );
+                            fprintf(stderr, "server(%d) get %s\n", port, misc_buf);
                             memset(sock_buf, 0, sizeof(sock_buf));
                             memcpy(sock_buf, misc_buf, strlen(misc_buf));
                             sock_count = (int)strlen(misc_buf);
